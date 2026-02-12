@@ -2,10 +2,10 @@
   "name": "agentcards",
   "account_id": "3fb3821f44c47c7e74af9b5ef6868ed6",
   "compatibility_date": "2025-02-12",
-  "assets": { "directory": "./site" }
-  // Uncomment after agentcrew.site domain is added to Cloudflare:
-  // "routes": [
-  //   { "pattern": "agentcrew.site", "custom_domain": true },
-  //   { "pattern": "www.agentcrew.site", "custom_domain": true }
-  // ]
+  "workers_dev": true,
+  "assets": { "directory": "./site" },
+  "routes": [
+    { "pattern": "agentcards.pro", "custom_domain": true },
+    { "pattern": "www.agentcards.pro", "custom_domain": true }
+  ]
 }
