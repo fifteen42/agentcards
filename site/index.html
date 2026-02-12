@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Cards — AI Trading Card Collection</title>
+  <meta name="description" content="Collect AI Agent trading cards. Cyberpunk-style cards featuring Claude, GPT-4, Gemini, and more." />
+  <style>
+    /* ── Fonts ── */
+    @font-face {
+      font-family: 'GeistPixel';
+      src: url('https://unpkg.com/geist@1.7.0/dist/fonts/geist-pixel/GeistPixel-Square.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    /* ── Reset & Base ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:          #0a0e14;
+      --bg-card:     #131920;
+      --bg-card-back:#0f1419;
+      --green:       #00ff9f;
+      --green-dim:   #00cc7f;
+      --pink:        #ff2e97;
+      --purple:      #b44aff;
+      --blue:        #00b4ff;
+      --gold:        #ffd700;
+      --text:        #e0e0e0;
+      --text-dim:    #6b7b8d;
+      --border:      #1e2a36;
+      --pixel:       'GeistPixel', 'Courier New', monospace;
+      --mono:        'Courier New', Courier, monospace;
+
+      /* Rarity colors */
+      --legendary:   #ffd700;
+      --epic:        #b44aff;
+      --rare:        #00b4ff;
+      --common:      #6b7b8d;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 16px;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── Scanline overlay ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 159, 0.015) 2px,
+        rgba(0, 255, 159, 0.015) 4px
+      );
+      z-index: 9999;
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    section { padding: 72px 0; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero h1 {
+      font-family: var(--pixel);
+      font-size: clamp(32px, 6vw, 64px);
+      color: var(--green);
+      letter-spacing: 4px;
+      line-height: 1.2;
+      text-shadow: 0 0 20px rgba(0, 255, 159, 0.3), 0 0 60px rgba(0, 255, 159, 0.1);
+    }
+
+    .hero h1 .accent { color: var(--pink); }
+
+    .hero h1 .cursor {
+      display: inline-block;
+      width: .5em;
+      height: .85em;
+      background: var(--green);
+      margin-left: 4px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0; }
+    }
+
+    .hero-tagline {
+      margin-top: 24px;
+      font-size: 16px;
+      color: var(--text-dim);
+      max-width: 520px;
+      line-height: 1.8;
+      visibility: hidden;
+    }
+
+    .hero-scroll {
+      position: absolute;
+      bottom: 36px;
+      font-family: var(--pixel);
+      font-size: 11px;
+      color: var(--border);
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(6px); }
+    }
+
+    /* ── Section titles ── */
+    .section-title {
+      font-family: var(--pixel);
+      font-size: 22px;
+      color: var(--green);
+      margin-bottom: 12px;
+      text-shadow: 0 0 10px rgba(0, 255, 159, 0.2);
+    }
+
+    .section-title::before {
+      content: '> ';
+      color: var(--pink);
+    }
+
+    .section-subtitle {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 36px;
+    }
+
+    /* ── Filter buttons ── */
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      font-family: var(--pixel);
+      font-size: 11px;
+      padding: 6px 16px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all .2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .filter-btn.active {
+      border-color: var(--green);
+      color: var(--bg);
+      background: var(--green);
+    }
+
+    .filter-btn[data-rarity="legendary"].active { background: var(--legendary); border-color: var(--legendary); color: #000; }
+    .filter-btn[data-rarity="epic"].active       { background: var(--epic);      border-color: var(--epic);      color: #fff; }
+    .filter-btn[data-rarity="rare"].active        { background: var(--rare);      border-color: var(--rare);      color: #000; }
+    .filter-btn[data-rarity="common"].active      { background: var(--common);    border-color: var(--common);    color: #000; }
+
+    /* ── Cards Grid ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    /* ── Card wrapper (3D flip) ── */
+    .card-wrapper {
+      perspective: 800px;
+      cursor: pointer;
+      height: 380px;
+      transition: opacity .3s, transform .3s;
+    }
+
+    .card-wrapper.hidden {
+      display: none;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .card-wrapper.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      background: var(--bg-card-back);
+      padding: 24px 20px;
+    }
+
+    /* ── Rarity glow borders ── */
+    .card-wrapper[data-rarity="legendary"] .card-front,
+    .card-wrapper[data-rarity="legendary"] .card-back {
+      border-color: var(--legendary);
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), inset 0 0 15px rgba(255, 215, 0, 0.05);
+      animation: legendaryGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes legendaryGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), inset 0 0 15px rgba(255, 215, 0, 0.05); }
+      50%      { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5), inset 0 0 25px rgba(255, 215, 0, 0.1); }
+    }
+
+    .card-wrapper[data-rarity="epic"] .card-front,
+    .card-wrapper[data-rarity="epic"] .card-back {
+      border-color: var(--epic);
+      box-shadow: 0 0 12px rgba(180, 74, 255, 0.3);
+    }
+
+    .card-wrapper[data-rarity="rare"] .card-front,
+    .card-wrapper[data-rarity="rare"] .card-back {
+      border-color: var(--rare);
+      box-shadow: 0 0 8px rgba(0, 180, 255, 0.2);
+    }
+
+    .card-wrapper[data-rarity="common"] .card-front,
+    .card-wrapper[data-rarity="common"] .card-back {
+      border-color: var(--common);
+    }
+
+    /* ── Card Front Content ── */
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .card-rarity {
+      font-family: var(--pixel);
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border: 1px solid;
+    }
+
+    .rarity-legendary { color: var(--legendary); border-color: var(--legendary); }
+    .rarity-epic      { color: var(--epic);      border-color: var(--epic); }
+    .rarity-rare      { color: var(--rare);      border-color: var(--rare); }
+    .rarity-common    { color: var(--common);    border-color: var(--common); }
+
+    .card-number {
+      font-family: var(--pixel);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* ── CSS Pixel Avatar ── */
+    .pixel-avatar {
+      width: 80px;
+      height: 80px;
+      margin: 8px auto 12px;
+      image-rendering: pixelated;
+    }
+
+    .pixel-grid {
+      width: 1px;
+      height: 1px;
+      transform: scale(8);
+      transform-origin: top left;
+      margin: 0 auto;
+      position: relative;
+      left: calc(50% - 40px);
+    }
+
+    .card-name {
+      font-family: var(--pixel);
+      font-size: 16px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .card-type {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-align: center;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* ── Stat bars ── */
+    .stats {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .stat-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+    }
+
+    .stat-label {
+      font-family: var(--pixel);
+      font-size: 9px;
+      color: var(--text-dim);
+      width: 60px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .stat-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      transition: width 0.8s ease-out;
+      width: 0;
+    }
+
+    .stat-val {
+      font-family: var(--pixel);
+      font-size: 9px;
+      width: 24px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* ── Card Back Content ── */
+    .card-back-title {
+      font-family: var(--pixel);
+      font-size: 14px;
+      color: var(--green);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .card-back-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.7;
+      margin-bottom: 16px;
+      flex: 1;
+    }
+
+    .card-ability {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    .ability-label {
+      font-family: var(--pixel);
+      font-size: 9px;
+      color: var(--pink);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .ability-name {
+      font-family: var(--pixel);
+      font-size: 12px;
+      color: var(--green);
+      margin-bottom: 4px;
+    }
+
+    .ability-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .card-back-footer {
+      margin-top: 12px;
+      font-family: var(--pixel);
+      font-size: 9px;
+      color: var(--text-dim);
+      text-align: center;
+      opacity: 0.5;
+    }
+
+    /* ── Flip hint ── */
+    .flip-hint {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      opacity: 0.6;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 36px 0;
+      text-align: center;
+    }
+
+    footer .footer-link {
+      font-family: var(--pixel);
+      font-size: 14px;
+      color: var(--green);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(0, 255, 159, 0.3);
+      padding-bottom: 2px;
+      transition: border-color .2s;
+    }
+
+    footer .footer-link:hover { border-color: var(--green); }
+
+    footer .copy {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    footer .fooo-link {
+      margin-top: 8px;
+      font-size: 11px;
+    }
+
+    footer .fooo-link a {
+      color: var(--text-dim);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+    }
+
+    footer .fooo-link a:hover { color: var(--green); border-color: var(--green); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .cards-grid { grid-template-columns: repeat(3, 1fr); }
+      .card-wrapper { height: 360px; }
+    }
+
+    @media (max-width: 680px) {
+      section { padding: 48px 0; }
+      .cards-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+      .card-wrapper { height: 340px; }
+      .card-front, .card-back { padding: 14px; }
+      .pixel-grid { transform: scale(6); left: calc(50% - 30px); }
+      .pixel-avatar { width: 60px; height: 60px; }
+    }
+
+    @media (max-width: 380px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .card-wrapper { height: 380px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════ HERO ═══════════ -->
+  <section class="hero">
+    <h1>AGENT<br><span class="accent">CARDS</span><span class="cursor" aria-hidden="true"></span></h1>
+    <p class="hero-tagline">Collect them all. AI agents rendered as cyberpunk trading cards — each with unique stats, abilities, and rarity.</p>
+    <div class="hero-scroll">[ scroll down ]</div>
+  </section>
+
+  <!-- ═══════════ COLLECTION ═══════════ -->
+  <section id="collection">
+    <div class="container">
+      <h2 class="section-title">Collection</h2>
+      <p class="section-subtitle">Click a card to flip it and reveal its special ability.</p>
+
+      <div class="filters">
+        <button class="filter-btn active" data-rarity="all">All</button>
+        <button class="filter-btn" data-rarity="legendary">Legendary</button>
+        <button class="filter-btn" data-rarity="epic">Epic</button>
+        <button class="filter-btn" data-rarity="rare">Rare</button>
+        <button class="filter-btn" data-rarity="common">Common</button>
+      </div>
+
+      <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer>
+    <div class="container">
+      <a class="footer-link" href="https://x.com/fifteen42_" target="_blank" rel="noopener">X: @fifteen42_</a>
+      <p class="copy">&copy; <span id="year"></span> AGENT CARDS</p>
+      <p class="fooo-link">A <a href="https://fooo.ooo" target="_blank" rel="noopener">FOOO Agent Crew</a> project</p>
+    </div>
+  </footer>
+
+  <script>
+    /* ═══════════ AGENT DATA ═══════════ */
+    const agents = [
+      {
+        id: '001', name: 'CLAUDE', type: 'Conversational AI', rarity: 'legendary',
+        maker: 'Anthropic',
+        stats: { INT: 97, SPD: 88, CRE: 95, REL: 96 },
+        desc: 'Constitutional AI pioneer. Excels at nuanced reasoning, long-form analysis, and following complex instructions with remarkable precision.',
+        ability: { name: 'Constitutional Reasoning', desc: 'Bypasses surface-level pattern matching to derive answers from deep logical chains.' },
+        avatar: [
+          '___7777___',
+          '__777777__',
+          '_77777777_',
+          '_7f77f777_',
+          '_77777777_',
+          '_7_7777_7_',
+          '_77_77_77_',
+          '__777777__',
+          '___7777___',
+          '____77____',
+        ]
+      },
+      {
+        id: '002', name: 'GPT-4', type: 'Large Language Model', rarity: 'legendary',
+        maker: 'OpenAI',
+        stats: { INT: 95, SPD: 85, CRE: 92, REL: 90 },
+        desc: 'The model that mainstreamed AI. Multimodal reasoning powerhouse with vast world knowledge and strong generalization across domains.',
+        ability: { name: 'Omni Vision', desc: 'Seamlessly processes text, images, and audio in a unified reasoning framework.' },
+        avatar: [
+          '___3333___',
+          '__333333__',
+          '_33333333_',
+          '_3f33f333_',
+          '_33333333_',
+          '_3_3333_3_',
+          '_33_33_33_',
+          '__333333__',
+          '___3333___',
+          '____33____',
+        ]
+      },
+      {
+        id: '003', name: 'GEMINI', type: 'Multimodal AI', rarity: 'epic',
+        maker: 'Google',
+        stats: { INT: 93, SPD: 92, CRE: 88, REL: 87 },
+        desc: 'Google\'s multimodal native model. Built from the ground up to understand text, code, images, and video in a unified architecture.',
+        ability: { name: 'Native Multimodal', desc: 'Processes interleaved text, image, and video inputs without separate encoders.' },
+        avatar: [
+          '___4444___',
+          '__444444__',
+          '_44444444_',
+          '_4f44f444_',
+          '_44444444_',
+          '_4_4444_4_',
+          '_44_44_44_',
+          '__444444__',
+          '___4444___',
+          '____44____',
+        ]
+      },
+      {
+        id: '004', name: 'CLAUDE CODE', type: 'Coding Agent', rarity: 'epic',
+        maker: 'Anthropic',
+        stats: { INT: 94, SPD: 90, CRE: 91, REL: 93 },
+        desc: 'Agentic coding companion in the terminal. Plans, writes, tests, and deploys code autonomously across entire codebases.',
+        ability: { name: 'Codebase Mastery', desc: 'Maps entire repositories and executes multi-file changes with surgical precision.' },
+        avatar: [
+          '___aaaa___',
+          '__aaaaaa__',
+          '_aaaaaaaa_',
+          '_afaafa__a',
+          '_aaaaaaaa_',
+          '_a_aaaa_a_',
+          '_aa_aa_aa_',
+          '__aaaaaa__',
+          '___aaaa___',
+          '____aa____',
+        ]
+      },
+      {
+        id: '005', name: 'CURSOR', type: 'Code Editor AI', rarity: 'epic',
+        maker: 'Cursor Inc',
+        stats: { INT: 88, SPD: 95, CRE: 86, REL: 89 },
+        desc: 'AI-native code editor that integrates LLM intelligence directly into the development workflow. Tab-complete on steroids.',
+        ability: { name: 'Predictive Edit', desc: 'Anticipates multi-line code changes from natural language intent and partial keystrokes.' },
+        avatar: [
+          '___5555___',
+          '__555555__',
+          '_55555555_',
+          '_5f55f555_',
+          '_55555555_',
+          '_5_5555_5_',
+          '_55_55_55_',
+          '__555555__',
+          '___5555___',
+          '____55____',
+        ]
+      },
+      {
+        id: '006', name: 'DEVIN', type: 'Software Engineer', rarity: 'rare',
+        maker: 'Cognition',
+        stats: { INT: 85, SPD: 78, CRE: 82, REL: 80 },
+        desc: 'The world\'s first AI software engineer. Operates autonomously with its own shell, browser, and editor to tackle full engineering tasks.',
+        ability: { name: 'Full Autonomy', desc: 'Spins up its own dev environment and iterates on solutions without human intervention.' },
+        avatar: [
+          '___6666___',
+          '__666666__',
+          '_66666666_',
+          '_6f66f666_',
+          '_66666666_',
+          '_6_6666_6_',
+          '_66_66_66_',
+          '__666666__',
+          '___6666___',
+          '____66____',
+        ]
+      },
+      {
+        id: '007', name: 'COPILOT', type: 'Code Assistant', rarity: 'rare',
+        maker: 'GitHub',
+        stats: { INT: 83, SPD: 93, CRE: 80, REL: 88 },
+        desc: 'The original AI pair programmer. Embedded in millions of IDE setups worldwide, suggesting code completions at lightning speed.',
+        ability: { name: 'Context Window', desc: 'Pulls relevant context from open files, imports, and project structure for pinpoint suggestions.' },
+        avatar: [
+          '___2222___',
+          '__222222__',
+          '_22222222_',
+          '_2f22f222_',
+          '_22222222_',
+          '_2_2222_2_',
+          '_22_22_22_',
+          '__222222__',
+          '___2222___',
+          '____22____',
+        ]
+      },
+      {
+        id: '008', name: 'PERPLEXITY', type: 'Search AI', rarity: 'rare',
+        maker: 'Perplexity AI',
+        stats: { INT: 86, SPD: 94, CRE: 79, REL: 85 },
+        desc: 'AI-powered answer engine that searches the web in real-time. Delivers cited, concise answers instead of a list of links.',
+        ability: { name: 'Live Search', desc: 'Queries the live web and synthesizes multi-source answers with inline citations.' },
+        avatar: [
+          '___bbbb___',
+          '__bbbbbb__',
+          '_bbbbbbbb_',
+          '_bfbbfbbb_',
+          '_bbbbbbbb_',
+          '_b_bbbb_b_',
+          '_bb_bb_bb_',
+          '__bbbbbb__',
+          '___bbbb___',
+          '____bb____',
+        ]
+      },
+      {
+        id: '009', name: 'MIDJOURNEY', type: 'Image Generator', rarity: 'epic',
+        maker: 'Midjourney',
+        stats: { INT: 75, SPD: 70, CRE: 99, REL: 82 },
+        desc: 'The artist of AI. Generates stunning, photorealistic and fantastical images from text prompts with unmatched aesthetic quality.',
+        ability: { name: 'Aesthetic Engine', desc: 'Produces images with cinematic lighting, composition, and artistic depth beyond other generators.' },
+        avatar: [
+          '___cccc___',
+          '__cccccc__',
+          '_cccccccc_',
+          '_cfccfccc_',
+          '_cccccccc_',
+          '_c_cccc_c_',
+          '_cc_cc_cc_',
+          '__cccccc__',
+          '___cccc___',
+          '____cc____',
+        ]
+      },
+      {
+        id: '010', name: 'LLAMA', type: 'Open Source LLM', rarity: 'common',
+        maker: 'Meta',
+        stats: { INT: 82, SPD: 88, CRE: 78, REL: 84 },
+        desc: 'Meta\'s open-weight champion. Democratized large language models, spawning an entire ecosystem of fine-tuned variants.',
+        ability: { name: 'Open Weights', desc: 'Fully customizable weights enable fine-tuning for any domain or deployment scenario.' },
+        avatar: [
+          '___dddd___',
+          '__dddddd__',
+          '_dddddddd_',
+          '_dfddfddd_',
+          '_dddddddd_',
+          '_d_dddd_d_',
+          '_dd_dd_dd_',
+          '__dddddd__',
+          '___dddd___',
+          '____dd____',
+        ]
+      },
+      {
+        id: '011', name: 'MISTRAL', type: 'Open Source LLM', rarity: 'common',
+        maker: 'Mistral AI',
+        stats: { INT: 84, SPD: 91, CRE: 80, REL: 83 },
+        desc: 'European efficiency at its finest. Punches well above its weight class with optimized architectures and mixture-of-experts.',
+        ability: { name: 'MoE Routing', desc: 'Activates only relevant expert sub-networks per token, maximizing speed-to-quality ratio.' },
+        avatar: [
+          '___eeee___',
+          '__eeeeee__',
+          '_eeeeeeee_',
+          '_efeefefee',
+          '_eeeeeeee_',
+          '_e_eeee_e_',
+          '_ee_ee_ee_',
+          '__eeeeee__',
+          '___eeee___',
+          '____ee____',
+        ]
+      },
+      {
+        id: '012', name: 'GROK', type: 'Conversational AI', rarity: 'common',
+        maker: 'xAI',
+        stats: { INT: 80, SPD: 86, CRE: 85, REL: 78 },
+        desc: 'Built by xAI with real-time X/Twitter integration. Known for unfiltered, witty responses and current events knowledge.',
+        ability: { name: 'Real-Time Feed', desc: 'Taps into live social media streams for up-to-the-minute context and cultural awareness.' },
+        avatar: [
+          '___1111___',
+          '__111111__',
+          '_11111111_',
+          '_1f11f111_',
+          '_11111111_',
+          '_1_1111_1_',
+          '_11_11_11_',
+          '__111111__',
+          '___1111___',
+          '____11____',
+        ]
+      },
+    ];
+
+    /* ═══════════ COLOR MAP for pixel avatars ═══════════ */
+    const colorMap = {
+      '_': 'transparent',
+      '1': '#ff4444', '2': '#44aaff', '3': '#44cc44',
+      '4': '#ffaa00', '5': '#00cccc', '6': '#ff6600',
+      '7': '#c89bff', '8': '#ff69b4', '9': '#aaaaaa',
+      'a': '#00ff9f', 'b': '#ff2e97', 'c': '#ffd700',
+      'd': '#6699ff', 'e': '#ff8844', 'f': '#ffffff',
+    };
+
+    /* ═══════════ RENDER PIXEL AVATAR ═══════════ */
+    function renderAvatar(rows) {
+      const shadows = [];
+      rows.forEach((row, y) => {
+        for (let x = 0; x < row.length; x++) {
+          const ch = row[x];
+          if (ch === '_') continue;
+          const color = colorMap[ch] || '#fff';
+          shadows.push(`${x}px ${y}px 0 ${color}`);
+        }
+      });
+      return shadows.join(',');
+    }
+
+    /* ═══════════ RENDER STAT BAR ═══════════ */
+    function getStatColor(val) {
+      if (val >= 95) return 'var(--legendary)';
+      if (val >= 90) return 'var(--green)';
+      if (val >= 80) return 'var(--blue)';
+      return 'var(--text-dim)';
+    }
+
+    /* ═══════════ BUILD CARDS ═══════════ */
+    const grid = document.getElementById('cardsGrid');
+
+    agents.forEach((agent, idx) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'card-wrapper';
+      wrapper.dataset.rarity = agent.rarity;
+      wrapper.addEventListener('click', () => wrapper.classList.toggle('flipped'));
+
+      wrapper.innerHTML = `
+        <div class="card-inner">
+          <div class="card-front">
+            <div class="card-header">
+              <span class="card-rarity rarity-${agent.rarity}">${agent.rarity}</span>
+              <span class="card-number">#${agent.id}</span>
+            </div>
+            <div class="pixel-avatar">
+              <div class="pixel-grid" style="box-shadow:${renderAvatar(agent.avatar)};"></div>
+            </div>
+            <div class="card-name" style="color:var(--${agent.rarity === 'legendary' ? 'legendary' : agent.rarity === 'epic' ? 'epic' : agent.rarity === 'rare' ? 'rare' : 'text'})">${agent.name}</div>
+            <div class="card-type">${agent.type}</div>
+            <div class="stats">
+              ${Object.entries(agent.stats).map(([key, val]) => `
+                <div class="stat-row">
+                  <span class="stat-label">${key}</span>
+                  <div class="stat-bar-bg">
+                    <div class="stat-bar-fill" data-val="${val}" style="background:${getStatColor(val)};"></div>
+                  </div>
+                  <span class="stat-val" style="color:${getStatColor(val)}">${val}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="card-back">
+            <div class="card-back-title">${agent.name}</div>
+            <div class="card-back-desc">${agent.desc}</div>
+            <div class="card-ability">
+              <div class="ability-label">Special Ability</div>
+              <div class="ability-name">${agent.ability.name}</div>
+              <div class="ability-desc">${agent.ability.desc}</div>
+            </div>
+            <div class="card-back-footer">${agent.maker} // #${agent.id}</div>
+          </div>
+        </div>
+      `;
+
+      grid.appendChild(wrapper);
+    });
+
+    /* ═══════════ ANIMATE STAT BARS ON SCROLL ═══════════ */
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.stat-bar-fill').forEach(bar => {
+            bar.style.width = bar.dataset.val + '%';
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.card-wrapper').forEach(card => observer.observe(card));
+
+    /* ═══════════ FILTER BUTTONS ═══════════ */
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const rarity = btn.dataset.rarity;
+        document.querySelectorAll('.card-wrapper').forEach(card => {
+          if (rarity === 'all' || card.dataset.rarity === rarity) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    /* ═══════════ TYPEWRITER HERO ═══════════ */
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const tagline = document.querySelector('.hero-tagline');
+      if (!tagline) return;
+      const text = tagline.textContent;
+      tagline.textContent = '';
+      tagline.style.visibility = 'visible';
+      let i = 0;
+      (function type() {
+        if (i <= text.length) {
+          tagline.textContent = text.slice(0, i);
+          i++;
+          setTimeout(type, 25);
+        }
+      })();
+    });
+  </script>
+</body>
+</html>

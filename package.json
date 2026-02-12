@@ -1,0 +1,13 @@
+{
+  "name": "agentcards",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agent Cards - AI Trading Card Collection",
+  "scripts": {
+    "dev": "wrangler pages dev site",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.50.0"
+  }
+}
